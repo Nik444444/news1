@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Market Devils</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #080c14; color: #e2e8f0; font-family: 'DM Mono', 'Courier New', monospace; }
+    @keyframes slideUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+    @keyframes blink    { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+    @keyframes shimmer  { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: #080c14; }
+    ::-webkit-scrollbar-thumb { background: #1e2d42; border-radius: 2px; }
+    input:focus { outline: none; }
+    button { cursor: pointer; font-family: 'DM Mono', 'Courier New', monospace; }
+    button:active { transform: scale(.97); }
+
+    #app { min-height: 100vh; }
+
+    .header {
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 14px 20px;
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .header-inner {
+      max-width: 800px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .logo { display: flex; align-items: baseline; gap: 7px; }
+    .logo-market { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; color: #fff; letter-spacing: 3px; }
+    .logo-devils { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; color: #f87171; letter-spacing: 3px; }
+    .logo-sub { font-size: 8px; color: rgba(255,255,255,0.18); letter-spacing: 3px; margin-top: 1px; }
+    .header-stats { display: flex; align-items: center; gap: 14px; }
+    .stats-nums { display: flex; gap: 10px; }
+
+    .body { max-width: 800px; margin: 0 auto; padding: 18px 16px; }
+
+    .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .pill {
+      display: flex; align-items: center; gap: 5px;
+      border-radius: 8px; padding: 7px 13px; font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.3);
+      transition: all .2s;
+    }
+    .pill.active { font-weight: 700; }
+    .pill-refresh {
+      margin-left: auto;
+      background: rgba(74,222,128,0.07);
+      border: 1px solid rgba(74,222,128,0.2);
+      color: #4ade80;
+      border-radius: 8px; padding: 7px 14px; font-size: 12px;
+    }
+
+    .filters { display: flex; gap: 5px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      border-radius: 6px; padding: 5px 12px; font-size: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: transparent; color: rgba(255,255,255,0.22); font-weight: 700;
+    }
+    .filter-count { font-size: 10px; color: rgba(255,255,255,0.18); margin-left: auto; }
+
+    .manual-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .manual-input {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px; color: #e2e8f0; font-size: 12px;
+      padding: 10px 14px;
+    }
+    .manual-btn {
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.25);
+      color: #4ade80; border-radius: 8px;
+      padding: 10px 18px; font-size: 13px; font-weight: 700;
+    }
+
+    .error-box {
+      background: rgba(248,113,113,0.07);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .error-msg { color: #f87171; font-size: 12px; }
+    .retry-btn {
+      font-size: 11px; color: #4ade80;
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 6px; padding: 4px 12px; white-space: nowrap;
+    }
+
+    .skeleton { display: flex; flex-direction: column; gap: 8px; }
+    .skel-item {
+      height: 74px; border-radius: 12px;
+      border-left: 3px solid rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.04);
+      background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s ease infinite;
+    }
+    .skel-label { text-align: center; margin-top: 10px; font-size: 11px; color: rgba(255,255,255,0.18); letter-spacing: 2px; }
+
+    .card {
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+      cursor: pointer; transition: all .2s ease;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+    }
+    .card.open { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.09); }
+    .card-top { display: flex; gap: 10px; align-items: flex-start; }
+    .card-left { flex: 1; min-width: 0; }
+    .card-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 7px; }
+    .badge-sig { border-radius: 5px; padding: 2px 9px; font-size: 10px; font-weight: 800; }
+    .badge-type { font-size: 10px; color: rgba(255,255,255,0.28); }
+    .badge-high { font-size: 10px; color: #f87171; animation: blink 1.5s infinite; }
+    .badge-src { font-size: 10px; color: rgba(255,255,255,0.18); margin-left: auto; white-space: nowrap; }
+    .card-title { font-size: 13px; color: rgba(255,255,255,0.82); line-height: 1.5; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-title.open { white-space: normal; }
+    .card-summary { font-size: 11px; color: rgba(255,255,255,0.28); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sent-bar { position: relative; height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 6px; }
+    .sent-mid { position: absolute; left: 50%; top: -1px; width: 1px; height: 4px; background: rgba(255,255,255,0.1); }
+    .sent-fill { position: absolute; top: 0; height: 100%; border-radius: 2px; }
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+    .dots { display: flex; gap: 3px; }
+    .dot { width: 5px; height: 5px; border-radius: 50%; }
+    .conf { font-size: 11px; font-weight: 800; }
+
+    .card-expanded { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); animation: fadeIn .2s ease; }
+    .card-reasoning { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.7; margin-bottom: 10px; font-style: italic; }
+    .card-analysis { font-size: 13px; color: rgba(255,255,255,0.82); line-height: 1.75; margin-bottom: 14px; }
+    .levels { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .level-box { flex: 1; min-width: 80px; border-radius: 8px; padding: 9px 12px; }
+    .level-label { font-size: 9px; color: rgba(255,255,255,0.25); margin-bottom: 3px; }
+    .level-val { font-size: 16px; font-weight: 800; }
+    .tickers { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+    .ticker { border-radius: 5px; padding: 3px 9px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.05); }
+    .risk-box { font-size: 11px; color: #fbbf24; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); border-radius: 7px; padding: 8px 12px; }
+
+    .footer { margin-top: 32px; display: flex; justify-content: space-between; font-size: 9px; color: rgba(255,255,255,0.07); letter-spacing: 1.5px; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── PASTE YOUR GROQ KEY HERE ─────────────────────────────────────────────
+const GROQ_KEY = "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";
+// ──────────────────────────────────────────────────────────────────────────
+
+const ASSETS = [
+  { id:"ALL",  label:"ALL",     flag:"🌐", color:"#e2e8f0" },
+  { id:"NQ",   label:"NQ100",   flag:"🇺🇸", color:"#38bdf8" },
+  { id:"EUR",  label:"EUR/USD", flag:"🇪🇺", color:"#4ade80" },
+  { id:"GBP",  label:"GBP/USD", flag:"🇬🇧", color:"#fb923c" },
+  { id:"JPY",  label:"USD/JPY", flag:"🇯🇵", color:"#f472b6" },
+  { id:"GOLD", label:"XAU/USD", flag:"🥇",  color:"#fbbf24" },
+  { id:"OIL",  label:"WTI Oil", flag:"🛢️",  color:"#f87171" },
+];
+
+const SIG = {
+  LONG:  { color:"#4ade80", bg:"rgba(74,222,128,0.08)",  label:"LONG ▲" },
+  SHORT: { color:"#f87171", bg:"rgba(248,113,113,0.08)", label:"SHORT ▼" },
+  WAIT:  { color:"#fbbf24", bg:"rgba(251,191,36,0.08)",  label:"WAIT" },
+  AVOID: { color:"#c084fc", bg:"rgba(192,132,252,0.08)", label:"AVOID" },
+};
+
+const TYPE_ICONS = {
+  MACRO:"📊", POLITICAL:"🏛️", CENTRAL_BANK:"🏦",
+  CORPORATE:"🏢", GEOPOLITICAL:"🌍", RISK_ON:"🟢", RISK_OFF:"🔴",
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  asset: "NQ",
+  sigFilter: "ALL",
+  feed: [],
+  loading: false,
+  error: null,
+  lastUpdate: null,
+  countdown: 60,
+  freshIds: new Set(),
+  manualText: "",
+  expandedId: null,
+};
+
+let refreshTimer = null;
+let countdownTimer = null;
+
+// ── API ────────────────────────────────────────────────────────────────────
+function makePrompt(assetLabel) {
+  return `You are a senior institutional macro trader. Generate exactly 8 realistic financial market news items for ${assetLabel} traders. Context: May 2026, post-tariff environment, Fed holding rates.
+
+RETURN ONLY A JSON ARRAY. No explanation. No markdown. No backticks. First char [ last char ].
+
+Each object:
+{"title":"specific headline","summary":"2 sentence description","source":"Reuters","time":"5 min ago","signal":"LONG","type":"MACRO","strength":3,"confidence":72,"urgency":"HIGH","timeframe":"15-60min","reasoning":"Two Russian sentences about ${assetLabel} impact.","bull":21450,"bear":20800,"risk":"One Russian sentence.","tickers":["NVDA"],"sentiment":65}
+
+Mix: some LONG, some SHORT, some WAIT. bull/bear can be null. signal must be LONG or SHORT or WAIT or AVOID. urgency must be HIGH or MEDIUM or LOW.`;
+}
+
+function extractJSON(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch(e) {}
+  const s = raw.replace(/^```(?:json)?\s*/m,"").replace(/\s*```$/m,"").trim();
+  try { return JSON.parse(s); } catch(e) {}
+  const ai = raw.indexOf("["), bi = raw.lastIndexOf("]");
+  if (ai !== -1 && bi > ai) { try { return JSON.parse(raw.slice(ai, bi+1)); } catch(e) {} }
+  const ao = raw.indexOf("{"), bo = raw.lastIndexOf("}");
+  if (ao !== -1 && bo > ao) { try { return JSON.parse("["+raw.slice(ao, bo+1)+"]"); } catch(e) {} }
+  return null;
+}
+
+async function callGemini(systemPrompt, userMsg) {
+  if (!GROQ_KEY || GROQ_KEY === "PASTE_YOUR_GROQ_KEY_HERE") {
+    throw new Error("Вставь Groq API ключ в файл index.html");
+  }
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${GROQ_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+      max_tokens: 4000,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userMsg },
+      ],
+    }),
+  });
+  const d = await res.json();
+  if (d.error) throw new Error("Groq: " + d.error.message);
+  const text = d.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Пустой ответ от Groq");
+  return text.trim();
+}
+
+async function fetchNews(assetId) {
+  setState({ loading: true, error: null });
+  const assetObj = ASSETS.find(a => a.id === assetId) || ASSETS[1];
+  try {
+    const txt = await callGemini(makePrompt(assetObj.label), `Generate 8 news items for ${assetObj.label}. JSON array only.`);
+    const parsed = extractJSON(txt);
+    if (!parsed) throw new Error("Не удалось распарсить ответ. Попробуй ещё раз.");
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    const stamped = arr.map(item => ({ ...item, id: Math.random().toString(36).slice(2), assetId }));
+    const ids = new Set(stamped.map(i => i.id));
+    setTimeout(() => { setState({ freshIds: new Set() }); render(); }, 12000);
+    setState({ feed: stamped, lastUpdate: new Date(), countdown: 60, freshIds: ids, loading: false });
+  } catch(e) {
+    setState({ error: e.message, loading: false });
+  }
+}
+
+async function submitManual() {
+  const title = state.manualText.trim();
+  if (!title) return;
+  setState({ manualText: "", loading: true });
+  const assetObj = ASSETS.find(a => a.id === state.asset) || ASSETS[1];
+  try {
+    const sys = `Analyze this headline for ${assetObj.label} traders. Return ONLY a JSON object with: title, summary (2 sentences), source ("Manual"), time ("сейчас"), signal (LONG/SHORT/WAIT/AVOID), type, strength (1-5), confidence (20-90), urgency (HIGH/MEDIUM/LOW), timeframe, reasoning (Russian 2 sentences), bull (number or null), bear (number or null), risk (Russian 1 sentence), tickers (array of strings), sentiment (-100 to 100).`;
+    const txt = await callGemini(sys, `HEADLINE: ${title}`);
+    const parsed = extractJSON(txt);
+    if (parsed) {
+      const p = Array.isArray(parsed) ? parsed[0] : parsed;
+      const item = { ...p, title: p.title || title, source:"Manual", time:"сейчас", id: Math.random().toString(36).slice(2), assetId: state.asset };
+      const ids = new Set([item.id]);
+      setTimeout(() => { setState({ freshIds: new Set() }); render(); }, 12000);
+      setState({ feed: [item, ...state.feed], freshIds: ids, loading: false });
+    } else {
+      setState({ loading: false });
+    }
+  } catch(e) { setState({ error: e.message, loading: false }); }
+}
+
+// ── State management ───────────────────────────────────────────────────────
+function setState(updates) {
+  Object.assign(state, updates);
+  render();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  const filtered = state.feed.filter(item => state.sigFilter === "ALL" || item.signal === state.sigFilter);
+  const stats = {
+    LONG:  state.feed.filter(i => i.signal === "LONG").length,
+    SHORT: state.feed.filter(i => i.signal === "SHORT").length,
+    HIGH:  state.feed.filter(i => i.urgency === "HIGH").length,
+  };
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-inner">
+        <div>
+          <div class="logo">
+            <span class="logo-market">MARKET</span>
+            <span class="logo-devils">DEVILS</span>
+          </div>
+          <div class="logo-sub">AI SIGNAL INTELLIGENCE · GROQ</div>
+        </div>
+        <div class="header-stats">
+          <div class="stats-nums">
+            <span style="font-size:11px;color:#4ade80">▲${stats.LONG}</span>
+            <span style="font-size:11px;color:#f87171">▼${stats.SHORT}</span>
+            ${stats.HIGH > 0 ? `<span style="font-size:11px;color:#f87171;animation:blink 1.5s infinite">⚡${stats.HIGH}</span>` : ""}
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            ${state.loading
+              ? `<span class="live-dot" style="background:#fbbf24;animation:blink 1s infinite"></span><span style="font-size:10px;color:#fbbf24">АНАЛИЗ...</span>`
+              : `<span class="live-dot" style="background:#4ade80"></span><span style="font-size:10px;color:#4ade80">LIVE · ${state.countdown}s</span>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <div class="pills">
+        ${ASSETS.map(a => `
+          <button class="pill ${state.asset === a.id ? "active" : ""}"
+            style="${state.asset === a.id ? `color:${a.color};border-color:${a.color};background:${a.color}14` : ""}"
+            onclick="selectAsset('${a.id}')">
+            ${a.flag} ${a.label}
+          </button>
+        `).join("")}
+        <button class="pill-refresh" onclick="doFetch()">↻</button>
+      </div>
+
+      <div class="filters">
+        ${["ALL","LONG","SHORT","WAIT","AVOID"].map(f => {
+          const sc = SIG[f];
+          const active = state.sigFilter === f;
+          return `<button class="filter-btn"
+            style="${active && sc ? `color:${sc.color};border-color:${sc.color};background:${sc.bg}` : active ? "color:#e2e8f0;border-color:rgba(255,255,255,0.2)" : ""}"
+            onclick="setSigFilter('${f}')">${f}</button>`;
+        }).join("")}
+        <span class="filter-count">${filtered.length} сигналов</span>
+      </div>
+
+      <div class="manual-row">
+        <input class="manual-input" id="manualInput" type="text"
+          placeholder="Вставь твит / заголовок → Enter"
+          value="${escHtml(state.manualText)}"
+          oninput="state.manualText=this.value"
+          onkeydown="if(event.key==='Enter')submitManualHandler()"/>
+        <button class="manual-btn" onclick="submitManualHandler()">→</button>
+      </div>
+
+      ${state.error ? `
+        <div class="error-box">
+          <span class="error-msg">❌ ${escHtml(state.error)}</span>
+          <button class="retry-btn" onclick="doFetch()">Повторить</button>
+        </div>
+      ` : ""}
+
+      ${state.loading && state.feed.length === 0 ? `
+        <div class="skeleton">
+          ${[0,1,2,3,4,5].map(i => `<div class="skel-item" style="animation-delay:${i*0.1}s"></div>`).join("")}
+          <div class="skel-label">AI АНАЛИЗИРУЕТ РЫНОК...</div>
+        </div>
+      ` : ""}
+
+      ${!state.loading && !state.error && filtered.length === 0 && state.feed.length > 0 ? `
+        <div style="text-align:center;padding:60px 0;color:rgba(255,255,255,0.18);font-size:12px">Нет сигналов по фильтру</div>
+      ` : ""}
+
+      ${filtered.map(item => renderCard(item)).join("")}
+
+      <div class="footer">
+        <span>MARKET DEVILS © 2026</span>
+        <span>NOT FINANCIAL ADVICE</span>
+        <span>${state.lastUpdate ? state.lastUpdate.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "--:--:--"}</span>
+      </div>
+    </div>
+  `;
+}
+
+function escHtml(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderCard(item) {
+  const sig = SIG[item.signal] || SIG.WAIT;
+  const icon = TYPE_ICONS[item.type] || "📰";
+  const isOpen = state.expandedId === item.id;
+  const isNew  = state.freshIds.has(item.id);
+
+  const sentW = Math.abs(Math.max(-100, Math.min(100, item.sentiment || 0))) / 2;
+  const sentLeft = (item.sentiment || 0) >= 0 ? "50%" : `${50 - sentW}%`;
+  const sentCol = (item.sentiment||0) > 20 ? "#4ade80" : (item.sentiment||0) < -20 ? "#f87171" : "#fbbf24";
+
+  const dotsHtml = [1,2,3,4,5].map(i =>
+    `<div class="dot" style="background:${i<=(item.strength||1)?sig.color:"rgba(255,255,255,0.07)"}"></div>`
+  ).join("");
+
+  const confColor = item.confidence>=70 ? sig.color : item.confidence>=45 ? "#fbbf24" : "rgba(255,255,255,0.25)";
+
+  let expandedHtml = "";
+  if (isOpen) {
+    const levelsHtml = (item.bull || item.bear) ? `
+      <div class="levels">
+        ${item.bull ? `<div class="level-box" style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15)">
+          <div class="level-label">↑ БЫЧИЙ</div>
+          <div class="level-val" style="color:#4ade80">${Number(item.bull).toLocaleString()}</div>
+        </div>` : ""}
+        ${item.bear ? `<div class="level-box" style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15)">
+          <div class="level-label">↓ МЕДВЕЖИЙ</div>
+          <div class="level-val" style="color:#f87171">${Number(item.bear).toLocaleString()}</div>
+        </div>` : ""}
+        <div class="level-box" style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15)">
+          <div class="level-label">⏱ ОКНО</div>
+          <div class="level-val" style="font-size:12px;color:#fbbf24">${escHtml(item.timeframe)}</div>
+        </div>
+      </div>
+    ` : "";
+
+    const tickersHtml = (item.tickers && item.tickers.length) ? `
+      <div class="tickers">
+        ${item.tickers.map(t => `<span class="ticker" style="border:1px solid ${sig.color}33;color:${sig.color}">${escHtml(t)}</span>`).join("")}
+      </div>
+    ` : "";
+
+    expandedHtml = `
+      <div class="card-expanded">
+        ${item.summary ? `<div class="card-reasoning">${escHtml(item.summary)}</div>` : ""}
+        <div class="card-analysis">${escHtml(item.reasoning)}</div>
+        ${levelsHtml}
+        ${tickersHtml}
+        ${item.risk ? `<div class="risk-box">⚠️ ${escHtml(item.risk)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card ${isOpen ? "open" : ""}"
+      style="border-left:3px solid ${sig.color};${isNew ? "animation:slideUp .4s ease" : ""}"
+      onclick="toggleCard('${item.id}')">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="card-badges">
+            <span class="badge-sig" style="background:${sig.bg};color:${sig.color};border:1px solid ${sig.color}44">${sig.label}</span>
+            <span class="badge-type">${icon} ${(item.type||"").replace("_"," ")}</span>
+            ${item.urgency==="HIGH" ? `<span class="badge-high">⚡HIGH</span>` : ""}
+            <span class="badge-src">${escHtml(item.source)} · ${escHtml(item.time)}</span>
+          </div>
+          <div class="card-title ${isOpen ? "open" : ""}">${escHtml(item.title)}</div>
+          ${!isOpen && item.summary ? `<div class="card-summary">${escHtml(item.summary)}</div>` : ""}
+          <div class="sent-bar">
+            <div class="sent-mid"></div>
+            <div class="sent-fill" style="left:${sentLeft};width:${sentW}%;background:${sentCol}"></div>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="dots">${dotsHtml}</div>
+          <span class="conf" style="color:${confColor}">${item.confidence}%</span>
+        </div>
+      </div>
+      ${expandedHtml}
+    </div>
+  `;
+}
+
+// ── Event handlers (global) ────────────────────────────────────────────────
+window.selectAsset = function(id) {
+  state.asset = id;
+  state.feed = [];
+  state.error = null;
+  render();
+  clearInterval(refreshTimer);
+  fetchNews(id);
+  refreshTimer = setInterval(() => fetchNews(state.asset), 60000);
+};
+
+window.setSigFilter = function(f) {
+  setState({ sigFilter: f });
+};
+
+window.doFetch = function() {
+  fetchNews(state.asset);
+};
+
+window.toggleCard = function(id) {
+  setState({ expandedId: state.expandedId === id ? null : id });
+};
+
+window.submitManualHandler = function() {
+  submitManual();
+};
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+render();
+fetchNews(state.asset);
+refreshTimer  = setInterval(() => fetchNews(state.asset), 60000);
+countdownTimer = setInterval(() => {
+  state.countdown = state.countdown > 0 ? state.countdown - 1 : 60;
+  // only update countdown display without full re-render
+  const el = document.querySelector(".header-stats span[data-cd]");
+  if (!el) { render(); } // fallback
+}, 1000);
+</script>
+</body>
+</html>
